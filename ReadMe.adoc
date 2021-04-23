@@ -1,0 +1,5 @@
+= rend
+
+CGII Rendering TP
+
+Baseline: https://gitlab.inria.fr/holzschu/GPGPU_TP
