@@ -526,7 +526,7 @@ void glShaderWindow::bindSceneToProgram()
     ground_texcoordBuffer.bind();
     shadowMapGenerationProgram->setAttributeBuffer( "texcoords", GL_FLOAT, 0, 2 );
     shadowMapGenerationProgram->enableAttributeArray( "texcoords" );
-    ground_program->release();
+    shadowMapGenerationProgram->release(); // ground_program->release();
     ground_vao.release();
 }
 
