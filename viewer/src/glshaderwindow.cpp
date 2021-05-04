@@ -819,7 +819,7 @@ void glShaderWindow::initialize()
         delete(m_program);
     }
 	QString shaderPath = workingDirectory + "../shaders/";
-    m_program = prepareShaderProgram(shaderPath + "1_simple.vert", shaderPath + "1_simple.frag");
+    m_program = prepareShaderProgram(shaderPath + "2_phong.vert", shaderPath + "2_phong.frag");
     if (ground_program) {
         ground_program->release();
         delete(ground_program);
