@@ -153,7 +153,7 @@ int main( int argc, char* argv[] )
     glShaderWindow *window = new glShaderWindow();
     window->setFormat(format);
 
-    QString appPath = app.applicationDirPath();
+    QString appPath = app.applicationDirPath() + "/../../viewer/";
 #ifdef __APPLE__
     appPath = appPath + "/../../../models/";
 #else
