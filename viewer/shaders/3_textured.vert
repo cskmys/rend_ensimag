@@ -15,14 +15,14 @@ in vec2 texcoords;
 out vec4 eyeDir;
 out vec4 lightDir;
 out vec4 vertNormalDir;
-out vec4 vertColor;
+out vec4 vertcolor;
 out vec2 textCoords;
 
 void main( void ){
     if (noColor){
-        vertColor = vec4(0.4, 0.2, 0.6, 1.0);
+        vertcolor = vec4(0.4, 0.2, 0.6, 1.0);
     } else {
-        vertColor = color;
+        vertcolor = color;
     }
     
     textCoords = texcoords;
