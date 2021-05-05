@@ -1,7 +1,7 @@
 #version 410
 
-uniform mat4 matrix; // view matrix -> world to camera
-uniform mat4 perspective; // camera to screen
+uniform mat4 matrix;
+uniform mat4 perspective;
 uniform mat3 normalMatrix;
 uniform bool noColor;
 uniform vec3 lightPosition;
@@ -15,10 +15,6 @@ out vec4 eyeDir;
 out vec4 lightDir;
 out vec4 vertNormalDir;
 out vec4 vertColor;
-
-// here no motion of both character and cam, hence no seperate matrix for cam space
-// in other words, we keep camera constant and move the world
-// hence, perspective matrix will be constant and 'matrix' will change
 
 void main( void ){
     if (noColor){
