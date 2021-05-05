@@ -12,23 +12,30 @@ in vec4 normal;
 in vec4 color;
 in vec2 texcoords;
 
-// Camera-space coordinates
-out vec4 eyeVector;
-out vec4 lightVector;
-out vec4 lightSpace;
+out vec4 eyeDir;
+out vec4 lightDir;
+out vec4 vertNormalDir;
 out vec4 vertColor;
-out vec4 vertNormal;
 out vec2 textCoords;
 
-void main( void )
-{
-    if (noColor) vertColor = vec4(0.2, 0.6, 0.7, 1.0 );
-    else vertColor = color;
-    vertNormal.xyz = normalize(normalMatrix * normal.xyz);
-    vertNormal.w = 0.0;
+void main( void ){
+    if (noColor){
+        vertColor = vec4(0.4, 0.2, 0.6, 1.0);
+    } else {
+        vertColor = color;
+    }
+    
     textCoords = texcoords;
 
-    // TODO: compute eyeVector, lightVector. 
+    vertNormalDir = vec4(normalMatrix * normal.xyz, 0.0);
 
-    gl_Position = perspective * matrix * vertex;
+    vec4 w_lightPosition = matrix * vec4(lightPosition, 1.0);
+    vec4 w_vertex = matrix * vertex;
+    lightDir = w_lightPosition - w_vertex;
+    
+    vec4 eyePos = -vertex;
+    vec4 w_eyePos = matrix * eyePos;
+    eyeDir = vec4(w_eyePos.xyz, 0.0);
+
+    gl_Position = perspective * w_vertex;
 }

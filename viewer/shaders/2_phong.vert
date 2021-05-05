@@ -1,7 +1,7 @@
 #version 410
 
-uniform mat4 matrix;
-uniform mat4 perspective;
+uniform mat4 matrix; // view matrix -> world to camera
+uniform mat4 perspective; // camera to screen
 uniform mat3 normalMatrix;
 uniform bool noColor;
 uniform vec3 lightPosition;
@@ -11,21 +11,31 @@ in vec4 vertex;
 in vec4 normal;
 in vec4 color;
 
-// Camera-space coordinates
-out vec4 eyeVector;
-out vec4 lightVector;
-out vec4 lightSpace; // placeholder for shadow mapping
+out vec4 eyeDir;
+out vec4 lightDir;
+out vec4 vertNormalDir;
 out vec4 vertColor;
-out vec4 vertNormal;
 
-void main( void )
-{
-    if (noColor) vertColor = vec4(0.4, 0.2, 0.6, 1.0);
-    else vertColor = color;
-    vertNormal.xyz = normalize(normalMatrix * normal.xyz);
-    vertNormal.w = 0.0;
+// here no motion of both character and cam, hence no seperate matrix for cam space
+// in other words, we keep camera constant and move the world
+// hence, perspective matrix will be constant and 'matrix' will change
 
-    // TODO: compute eyeVector, lightVector. 
+void main( void ){
+    if (noColor){
+        vertColor = vec4(0.4, 0.2, 0.6, 1.0);
+    } else {
+        vertColor = color;
+    }
 
-    gl_Position = perspective * matrix * vertex;
+    vertNormalDir = vec4(normalMatrix * normal.xyz, 0.0);
+
+    vec4 w_lightPosition = matrix * vec4(lightPosition, 1.0);
+    vec4 w_vertex = matrix * vertex;
+    lightDir = w_lightPosition - w_vertex;
+    
+    vec4 eyePos = -vertex; // coz cam is at 0,0,0
+    vec4 w_eyePos = matrix * eyePos;
+    eyeDir = vec4(w_eyePos.xyz, 0.0);
+    
+    gl_Position = perspective * w_vertex;
 }
