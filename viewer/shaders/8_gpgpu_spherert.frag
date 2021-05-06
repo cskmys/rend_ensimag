@@ -19,15 +19,19 @@ in vec2 textCoords;
 out vec4 fragColor;
 
 
-vec4 getColorFromEnvironment(in vec3 direction)
-{
-    // TODO
-    return vec4(1);
+vec4 getColorFromEnvironment(in vec3 direction){
+    vec3 pos = direction;
+    vec2 uv = vec2(0.0);
+    uv.x = atan(pos.z, pos.x) * 0.5;
+    uv.y = asin(pos.y);
+    uv = uv / M_PI + 0.5;
+    vec4 envCol = texture(envMap, uv);
+    return envCol;
 }
 
 
 
-bool raySphereIntersect(in vec3 start, in vec3 direction, out vec3 newPoint) {
+bool raySphereIntersect(in vec3 start, in vec3 direction, out vec3 newPoint){
     vec3 cDir = center - start;// start - center; // TODO: after envMap, check if it should reverse
     float a = dot(direction, direction);
     float b = 2.0 * dot(cDir, direction);
@@ -43,8 +47,7 @@ bool raySphereIntersect(in vec3 start, in vec3 direction, out vec3 newPoint) {
     return res;
 }
 
-void main(void)
-{
+void main(void){
     // Step 1: I need pixel coordinates. Division by w?
     vec4 worldPos = position;
     worldPos.z = 1; // near clipping plane
@@ -61,7 +64,7 @@ void main(void)
     if(raySphereIntersect(P, u, t)){
         resultColor = vec4(1.0);        
     } else {
-        resultColor = texture(envMap, textCoords);
+        resultColor = getColorFromEnvironment(u);// texture(envMap, textCoords);
     }
     fragColor = resultColor;
 }
