@@ -29,22 +29,48 @@ vec4 getColorFromEnvironment(in vec3 direction){
     return envCol;
 }
 
-
-
 bool raySphereIntersect(in vec3 start, in vec3 direction, out vec3 newPoint){
-    vec3 cDir = center - start;// start - center; // TODO: after envMap, check if it should reverse
+    vec3 cDir = start - center;
     float a = dot(direction, direction);
     float b = 2.0 * dot(cDir, direction);
     float c = dot(cDir, cDir) - (radius * radius);
     float D = (b * b) - (4 * a * c);
     bool res = false;
-    if(D < 0){
-        newPoint = vec3(-1.0);
+    float t0 = 0.0;
+    if(D >= 0){
+        if(D == 0){
+            t0 = -b / (2 * a);
+            res = true;
+        } else {
+            t0 = (-b + sqrt(D)) / (2 * a);
+            if(t0 > 0){
+                res = true;
+            }
+        }
+    }
+    if(res == true){
+        newPoint = start + (t0 * direction);
+        // vec3 Nhit = normalize(Phit - center);
+        // float theta = acos(Nhit.y, radius);
+        // float phi = atan(Nhit.z, x);
     } else {
-        newPoint = center;// TODO (- b + sqrt(D)) / (2.0 * a);
-        res = true;
+        newPoint = vec3(-1.0);
     }
     return res;
+}
+
+float fresnelCoeff(float etaReal, float angle){
+     float c_i = sqrt(pow(etaReal, 2) - pow(sin(angle), 2));
+     
+     float cos_angle = cos(angle);
+     
+     float f_s = pow(abs((cos_angle - c_i)/(cos_angle + c_i)), 2);
+     
+     float temp = pow(etaReal, 2) * cos_angle;
+     float f_p = pow(abs((temp - c_i)/(temp + c_i)), 2);
+     
+     float f = (f_s + f_p)/2;
+     return f;
 }
 
 void main(void){
@@ -58,10 +84,10 @@ void main(void){
     // Step 2: ray direction:
     vec3 u = normalize((mat_inverse * worldPos).xyz); // ray direction
     vec3 P = (mat_inverse * vec4(0, 0, 0, 1)).xyz; // ray starting point
-    vec3 t = vec3(0.0);
+    vec3 Phit = vec3(0.0);
     
     vec4 resultColor = vec4(0,0,0,1);
-    if(raySphereIntersect(P, u, t)){
+    if(raySphereIntersect(P, u, Phit)){
         resultColor = vec4(1.0);        
     } else {
         resultColor = getColorFromEnvironment(u);// texture(envMap, textCoords);
