@@ -819,7 +819,8 @@ void glShaderWindow::initialize()
         delete(m_program);
     }
 	QString shaderPath = workingDirectory + "../shaders/";
-    m_program = prepareShaderProgram(shaderPath + "2_phong.vert", shaderPath + "2_phong.frag");
+
+    m_program = prepareShaderProgram(shaderPath + "1_simple.vert", shaderPath + "1_simple.frag");
     if (ground_program) {
         ground_program->release();
         delete(ground_program);
@@ -854,6 +855,9 @@ void glShaderWindow::initialize()
     ground_texcoordBuffer.create();
     ground_vao.release();
     openScene();
+
+    setShader("8_gpgpu_spherert");
+
 }
 
 void glShaderWindow::resizeEvent(QResizeEvent* event)
