@@ -50,7 +50,6 @@ bool raySphereIntersect(in vec3 start, in vec3 direction, out vec3 newPoint){
     }
     if(res == true){
         newPoint = start + (t0 * direction);
-        // vec3 Nhit = normalize(Phit - center);
         // float theta = acos(Nhit.y, radius);
         // float phi = atan(Nhit.z, x);
     } else {
@@ -73,6 +72,55 @@ float fresnelCoeff(float etaReal, float angle){
      return f;
 }
 
+float angleBwUnitVec(vec3 unitVec1, vec3 unitVec2){
+     float angle = acos(max(dot(unitVec1, unitVec2), 0));
+     return angle;
+}
+
+bool isRayInSphere(vec3 Phit,vec3 dir){
+    vec3 ray = Phit + dir;
+    vec3 t = ray - center;
+    float l = length(t);
+    bool res = false;
+    if(l < radius){
+        res = true;
+    }
+    return res;
+}
+
+struct stack{
+    vec3 P;
+    vec3 u;
+    float I;
+    int lev;
+};
+
+#define MAX_BOUNCE 4
+#define STACK_SIZ (MAX_BOUNCE * 2) 
+int sp = 0;
+stack Stack[STACK_SIZ];
+
+void push(vec3 P, vec3 u, float I, int lev){
+    if(lev < MAX_BOUNCE){
+        if(sp < STACK_SIZ){
+            stack dat = stack(P, u, I, lev);
+            Stack[sp] = dat;
+            ++sp;
+        }
+    } 
+}
+
+void pop(out vec3 P, out vec3 u, out float I, out int lev){
+    if(sp >= 0){
+        --sp;
+        stack dat = Stack[sp];
+        P = dat.P;
+        u = dat.u;
+        I = dat.I;
+        lev = dat.lev;
+    }
+}
+
 void main(void){
     // Step 1: I need pixel coordinates. Division by w?
     vec4 worldPos = position;
@@ -88,9 +136,20 @@ void main(void){
     
     vec4 resultColor = vec4(0,0,0,1);
     if(raySphereIntersect(P, u, Phit)){
-        resultColor = vec4(1.0);        
+        vec3 i = normalize(Phit - P);// normalize(P - Phit);
+        vec3 n = normalize(center - Phit);// normalize(Phit - center);
+        vec3 r = normalize(reflect(i, n));
+        vec3 t = normalize(refract(i, n, eta));
+        float theta_r = angleBwUnitVec(i, n);
+        float theta_t = angleBwUnitVec(t, -n);
+        if(isRayInSphere(Phit, r)){
+            resultColor = vec4(1.0);
+        } else {
+            resultColor = getColorFromEnvironment(r) * fresnelCoeff(eta, theta_r);
+        }
     } else {
         resultColor = getColorFromEnvironment(u);// texture(envMap, textCoords);
     }
+
     fragColor = resultColor;
 }
