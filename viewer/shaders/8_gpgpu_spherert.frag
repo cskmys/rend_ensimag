@@ -142,11 +142,11 @@ void main(void){
         vec3 t = normalize(refract(i, n, eta));
         float theta_r = angleBwUnitVec(i, n);
         float theta_t = angleBwUnitVec(t, -n);
+        float eta_r = 1.0;
         if(isRayInSphere(Phit, r)){
-            resultColor = vec4(1.0);
-        } else {
-            resultColor = getColorFromEnvironment(r) * fresnelCoeff(eta, theta_r);
+            eta_r = eta;
         }
+        resultColor = getColorFromEnvironment(r) * fresnelCoeff(eta_r, theta_r);
     } else {
         resultColor = getColorFromEnvironment(u);// texture(envMap, textCoords);
     }
