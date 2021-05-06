@@ -12,6 +12,9 @@ uniform float shininess;
 uniform float eta;
 
 in vec4 position;
+in vec4 vertColor;
+in vec4 vertNormal;
+in vec2 textCoords;
 
 out vec4 fragColor;
 
@@ -57,6 +60,8 @@ void main(void)
     vec4 resultColor = vec4(0,0,0,1);
     if(raySphereIntersect(P, u, t)){
         resultColor = vec4(1.0);        
+    } else {
+        resultColor = texture(envMap, textCoords);
     }
     fragColor = resultColor;
 }
