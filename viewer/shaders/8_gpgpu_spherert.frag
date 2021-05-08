@@ -212,8 +212,16 @@ bool scatter_dielec(Ray r_in, hit_record rec, out vec4 attenuation, out Ray scat
 ///////////////////////////////////////////////////////////////////
 // color
 vec4 getColorFromEnvironment(vec3 direction){
-    float t = 0.5f * (direction.y + 1.0f);
-    return ( (1.0f - t) * vec4(1.0f) ) + (t * vec4(0.5f, 0.7f, 1.0f, 1.0f));
+    vec3 pos = direction;
+    vec2 uv = vec2(0.0);
+    uv.x = atan(pos.z, pos.x) * 0.5;
+    uv.y = asin(pos.y);
+    uv = uv / M_PI + 0.5;
+    vec4 envCol = texture(envMap, uv);
+    return envCol;
+
+    // float t = 0.5f * (direction.y + 1.0f);
+    // return ( (1.0f - t) * vec4(1.0f) ) + (t * vec4(0.5f, 0.7f, 1.0f, 1.0f));
 }
 
 #define MAX_FLOAT	999999999
@@ -280,7 +288,7 @@ void main(void){
     s_list.s[0] = sphere(center, radius, MATTE, vec4(0.8f, 0.3f, 0.3f, 1.0f), 1.0);
     s_list.s[1] = sphere(center - vec3(0.0, radius + 100, 0.0), 100, MATTE, vec4(0.8f, 0.8f, 0.0f, 1.0f), 1.0);
     s_list.s[2] = sphere(center - vec3(-radius*2, 0, 0), radius, METAL, vec4(0.8f, 0.6f, 0.2f, 1.0f), 1.0);
-    s_list.s[3] = sphere(center - vec3(radius*2, 0, 0), radius, METAL, vec4(0.8f, 0.8f, 0.8f, 1.0f), 1.0);
+    s_list.s[3] = sphere(center - vec3(radius*2, 0, 0), radius, DIELEC, vec4(0.8f, 0.8f, 0.8f, 1.0f), 1.5);
 
     fragColor = color_nonrecursive(r, s_list);
 }
