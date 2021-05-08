@@ -30,6 +30,8 @@ vec4 getColorFromEnvironment(in vec3 direction){
     // return ( (1.0f - t) * vec4(1.0f) ) + (t * vec4(0.5f, 0.7f, 1.0f, 1.0f));
 }
 
+////////////////////////////////////////////////////
+// Ray class
 struct Ray{
     vec3 origin;
     vec3 direction;
@@ -40,42 +42,50 @@ vec3 point_at_parameter(Ray r, float t){
     return pt;
 }
 
+////////////////////////////////////////////////////
+// Hittable
 struct hit_record{
     float t; // parameter
     vec3 p; // hit point
     vec3 normal; // surface normal at hit point
+    int material;
+    vec4 albedo;
 };
 
 struct sphere{
     vec3 center;
     float radius;
+    int material;
+    vec4 albedo;
 };
 
-bool check_hit_rec(vec3 sphere_center, float sphere_radius, Ray r, float temp, float t_min, float t_max, out hit_record rec){
+bool check_hit_rec(sphere s, Ray r, float temp, float t_min, float t_max, inout hit_record rec){
     if(temp < t_max && temp > t_min){
         rec.t = temp;
         rec.p = point_at_parameter(r, rec.t);
-        rec.normal = (rec.p - sphere_center) / sphere_radius;
+        rec.normal = (rec.p - s.center) / s.radius;
+        rec.material = s.material;
+        rec.albedo = s.albedo;
         return true;
     }
     return false;
 }
 
-bool hit_sphere(vec3 sphere_center, float sphere_radius, Ray r, float t_min, float t_max, out hit_record rec){
-    vec3 oc = r.origin - sphere_center;
+bool hit_sphere(sphere s, Ray r, float t_min, float t_max, out hit_record rec){
+    vec3 oc = r.origin - s.center;
     float a = dot(r.direction, r.direction);
-    float b = dot(r.direction, oc); // redundant 2s are removed
-    float c = dot(oc, oc) - (sphere_radius * sphere_radius);
-    float discriminant = (b * b) - (a * c);
+    float b = dot(r.direction, oc);
+    float c = dot(oc, oc) - (s.radius * s.radius);
+    float discriminant = (b * b) - (a * c); // 4 in 4ac after sqrt becomes 2 and gets divided by 2a
     if(discriminant > 0){
         float temp = (-b - sqrt(discriminant)) / a;
         hit_record hr;
-        if(check_hit_rec(sphere_center, sphere_radius, r, temp, t_min, t_max, hr)){
+        if(check_hit_rec(s, r, temp, t_min, t_max, hr)){
             rec = hr;
             return true;
         }
         temp = (-b + sqrt(discriminant)) / a;
-        if(check_hit_rec(sphere_center, sphere_radius, r, temp, t_min, t_max, hr)){
+        if(check_hit_rec(s, r, temp, t_min, t_max, hr)){
             rec = hr;
             return true;
         }
@@ -83,6 +93,8 @@ bool hit_sphere(vec3 sphere_center, float sphere_radius, Ray r, float t_min, flo
     return false;
 }
 
+////////////////////////////////////////////////////
+// Hittable List
 #define NB_SPHERE_MAX 5
 struct sphere_list{
     sphere s[NB_SPHERE_MAX];
@@ -94,7 +106,7 @@ bool hit_sphere_list(sphere_list s_list, Ray r, float t_min, float t_max, out hi
     bool hit_anything = false;
     float closest_so_far = t_max;
     for (int i = 0; i < s_list.list_size; ++i) {
-        if(hit_sphere(s_list.s[i].center, s_list.s[i].radius, r, t_min, closest_so_far, temp_rec)){
+        if(hit_sphere(s_list.s[i], r, t_min, closest_so_far, temp_rec)){
             hit_anything = true;
             closest_so_far = temp_rec.t;
             rec = temp_rec;
@@ -103,9 +115,11 @@ bool hit_sphere_list(sphere_list s_list, Ray r, float t_min, float t_max, out hi
     return hit_anything;
 }
 
+////////////////////////////////////////////////////
+// stack
 struct stackFrame{
     Ray r;
-    float I;
+    vec4 I;
     int lev;
 };
 
@@ -125,7 +139,7 @@ void push(stackFrame dat){
 
 stackFrame pop(){
     stackFrame dat;
-    if(sp >= 0){
+    if(sp > 0){
         --sp;
         dat = Stack[sp];
     }
@@ -134,35 +148,71 @@ stackFrame pop(){
 
 bool isStackEmpty(){
     bool res = false;
-    if(sp < 0){
+    if(sp <= 0){
         res = true;
     }
     return res;
 }
 
+void flushStack(){
+    sp = 0;
+}
+///////////////////////////////////////////////////////////////////
+// material
+#define MATTE 0
+#define METAL 1
 vec3 random_in_unit_sphere() {
-    vec3 p = vec3(0.5, 0.5, 0.5);
+    vec3 p = normalize(vec3(gl_FragCoord.x, gl_FragCoord.y, gl_FragCoord.z));
     return p;
 }
 
+bool scatter_matte(Ray r_in, hit_record rec, out vec4 attenuation, out Ray scattered){
+    vec3 target = rec.p + rec.normal + random_in_unit_sphere(); // p + N is the new point(center of imaginary sphere) in direction of random point in unit sphere
+    scattered = Ray(rec.p, target - rec.p);
+    attenuation = rec.albedo;
+    return true;
+}
 
+bool scatter_metal(Ray r_in, hit_record rec, out vec4 attenuation, out Ray scattered){
+    vec3 reflected = reflect(normalize(r_in.direction), rec.normal);
+    scattered = Ray(rec.p, reflected);
+    attenuation = rec.albedo;
+    return (dot(scattered.direction, rec.normal) > 0);
+}
+
+///////////////////////////////////////////////////////////////////
+// color
 #define MAX_FLOAT	999999999
+
 vec4 color_nonrecursive(Ray r, sphere_list s){
-    stackFrame d = stackFrame(r, 1.0f, 0);
+    stackFrame d = stackFrame(r, vec4(1.0f), 0);
     push(d);
     while(!isStackEmpty()){
         d = pop();
         hit_record rec;
         if (hit_sphere_list(s, d.r, 0.001, MAX_FLOAT, rec)){
-            vec3 target = rec.p + rec.normal + random_in_unit_sphere();
-            d.r = Ray(rec.p, target - rec.p);
             d.lev++;
-            d.I *= 0.5f;
             if(d.lev < MAX_BOUNCE){
-                push(d);
+                Ray scattered;
+                vec4 attenuation;
+                bool res = false;
+                switch (rec.material) {
+                    case MATTE:
+                        res = scatter_matte(r, rec, attenuation, scattered);
+                        break;
+                    case METAL:
+                        res = scatter_metal(r, rec, attenuation, scattered);
+                        break;
+                }
+                if(res){
+                    d.I *= attenuation;
+                    d.r = scattered;
+                    push(d);
+                } else {
+                    return vec4(vec3(0.0), 1.0);
+                }
             } else {
-                vec3 unit_direction = normalize(r.direction);
-                return d.I * getColorFromEnvironment(unit_direction);
+                return vec4(vec3(0.0), 1.0);
             }
         } else {
             vec3 unit_direction = normalize(r.direction);
@@ -187,7 +237,7 @@ void main(void){
 
     sphere_list s_list;
     s_list.list_size = 1;
-    s_list.s[0] = sphere(center, radius);
+    s_list.s[0] = sphere(center, radius, METAL, vec4(0.8f, 0.6f, 0.2f, 1.0f));
 
     fragColor = color_nonrecursive(r, s_list);
 }
