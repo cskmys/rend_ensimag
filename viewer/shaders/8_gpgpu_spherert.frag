@@ -101,7 +101,7 @@ bool hit_sphere_list(sphere_list s_list, Ray r, float t_min, float t_max, out hi
     return hit_anything;
 }
 
-#define MAX_FLOAT	9999999999
+#define MAX_FLOAT	999999999
 vec4 color(Ray r, sphere_list s){
     hit_record rec;
     if (hit_sphere_list(s, r, 0.0, MAX_FLOAT, rec)){
